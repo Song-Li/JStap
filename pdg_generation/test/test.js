@@ -1,8 +1,10 @@
 var cp = require("child_process");
-function foo() {
-  var a = 123;
-  var b = a;
+function foo(c, d) {
+  var b = c;
+  b = d;
   console.log(b);
   cp.exec(b);
 }
-module.exports = {foo: foo};
+a = "abc";
+foo(a, 123);
+module.exports = {'foo': foo};
