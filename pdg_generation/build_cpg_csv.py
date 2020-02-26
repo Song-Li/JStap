@@ -13,10 +13,24 @@ class DFG_generator:
         self.dfg = None
         self.vul_pathes = []
         self.sink_funcs = sink_funcs
-        file_pathes = [join(file_dir, f) for f in listdir(file_dir) 
-                if isfile(join(file_dir, f)) and os.path.splitext(f)[1] == '.js']
-        for file_path in file_pathes:
+        self.file_pathes = []
+        for root, dirs, fs in os.walk(file_dir):
+            for f in fs:
+                if f.endswith('.js'):
+                    self.file_pathes.append(os.path.join(root, f))
+    
+    def check_all_files(self):
+        """
+        check all files of a vulnerability
+        """
+        for file_path in self.file_pathes:
+            print("checking: ", file_path)
             self.dfg = get_data_flow(file_path, dict())
+            self.mark_input_func()
+            self.traversal(self.dfg, 0, 
+                    monitor=self.check_sink)
+            self.log_results()
+
 
     def traversal(self, node, level, monitor=None):
         """
@@ -25,6 +39,8 @@ class DFG_generator:
             node: the node to start
             monitor: for each node, triger the monitor function
         """
+        if node is None:
+            return []
         path = [node]
         if monitor is not None:
             monitor(node)
@@ -88,7 +104,6 @@ class DFG_generator:
             start_node = self.dfg
         self.traversal(self.dfg, 0, lambda node: self._do_mark_input_func(node))
 
-
     def check_sink(self, node):
         #print('parents:+++++++++', node.id, node.name, node.attributes, node.data_dep_parents)
         found = False
@@ -128,10 +143,7 @@ def main():
     args = argparser.parse_args()
     input_dir_path = args.input_dir
     dfg_generator = DFG_generator(input_dir_path)
-    dfg_generator.mark_input_func()
-    dfg_generator.traversal(dfg_generator.dfg, 0, 
-            monitor=dfg_generator.check_sink)
-    dfg_generator.log_results()
+    dfg_generator.check_all_files()
     return dfg_generator.vul_pathes
 
 main()
